@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 
 using NetDimension.NanUI;
@@ -122,6 +123,8 @@ class MainWindow : Formium
 
     }
 
+
+
     #region Events
     private void MainWindow_BeforePopup(object sender, NetDimension.NanUI.Browser.BeforePopupEventArgs e)
     {
@@ -154,7 +157,7 @@ class MainWindow : Formium
 
     private void MainWindow_BeforeClose(object sender, NetDimension.NanUI.Browser.FormiumCloseEventArgs e)
     {
-        if (MessageBox.Show(WindowHWND, "确定关闭？", "关闭", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) != DialogResult.Yes)
+        if (MessageBox.Show(WindowHandle, "确定关闭？", "关闭", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) != DialogResult.Yes)
         {
             e.Canceled = true;
         }
@@ -162,16 +165,16 @@ class MainWindow : Formium
 
     private void MainWindow_KeyEvent(object sender, NetDimension.NanUI.Browser.KeyEventArgs e)
     {
-        // Force reload the page when F5 is pressed 
-        // 注册F5键按下时强制刷新页面
-        if (e.KeyEvent.WindowsKeyCode == (int)Keys.F5)
+        //Force reload the page when F5 is pressed
+        //注册F5键按下时强制刷新页面
+        if (e.KeyEvent.EventType == Xilium.CefGlue.CefKeyEventType.KeyUp && e.KeyEvent.WindowsKeyCode == (int)Keys.F5)
         {
             Reload(true);
         }
 
         // Show DevTools when F12 is pressed
         // 注册F12键按下时打开开发者工具
-        if (e.KeyEvent.WindowsKeyCode == (int)Keys.F12)
+        if (e.KeyEvent.EventType == Xilium.CefGlue.CefKeyEventType.KeyUp && e.KeyEvent.WindowsKeyCode == (int)Keys.F12)
         {
             ShowDevTools();
         }
@@ -191,7 +194,7 @@ class MainWindow : Formium
             () => new JavaScriptValue(Title),
             (v) =>
             {
-                InvokeIfRequired(() => MessageBox.Show(WindowHWND, $"JavaScript Result: {v.GetString()}", "JavaScript"));
+                InvokeIfRequired(() => MessageBox.Show(WindowHandle, $"JavaScript Result: {v.GetString()}", "JavaScript"));
             }
         );
 
@@ -204,14 +207,14 @@ return {
     b:'Hello NanUI',
     c:(text)=>console.log(text||'hello with empty text'),
     d:(callback)=> {
-        new Promise(callback(111))
+        callback(111)
             .then(x=>console.log(`success:${x}`))
             .catch(m=>console.log(`error:${m}`));
     },
     e:(s)=> s? `hello ${s}` : `hello from javascript`,
     f:(o)=>{
         console.log(o.test);
-        setTimeout(()=>o.test=new Date(),3000);
+        setTimeout(()=>o.test=new Date(),2000);
     }
 }; 
 })()");
@@ -226,7 +229,7 @@ return {
 
         InvokeIfRequired(() =>
         {
-            MessageBox.Show(WindowHWND, $"a={valueA} b={valueB}", "Value from JavaScript", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(WindowHandle, $"a={valueA} b={valueB}", "Value from JavaScript", MessageBoxButtons.OK, MessageBoxIcon.Information);
         });
 
         await obj["c"].ExecuteAsync(new JavaScriptValue("Hello World!"));
@@ -237,8 +240,8 @@ return {
         // 执行异步方法
         var d1 = await obj["d"].ExecuteAsync(new JavaScriptAsyncFunction(async (args, promise) =>
         {
-            await Task.Delay(1000);
-            promise.Resovle(new JavaScriptValue("hello"));
+            await Task.Delay(5000);
+            promise.Resovle(new JavaScriptValue("delayed message: hello!"));
         }));
 
 
@@ -272,7 +275,7 @@ return {
             InvokeIfRequired(() =>
             {
                 var x = args.Count > 0 ? args[0] : "no content";
-                MessageBox.Show(WindowHWND, $"JavaScript Result: {x}", "Test");
+                MessageBox.Show(WindowHandle, $"JavaScript Result: {x}", "Test");
             });
 
             return null;
@@ -289,7 +292,7 @@ return {
 
             InvokeIfRequired(() =>
             {
-                MessageBox.Show(WindowHWND, $"JavaScript said: {msg}", "Message from JavaScript");
+                MessageBox.Show(WindowHandle, $"JavaScript said: {msg}", "Message from JavaScript");
             });
 
             return null;
